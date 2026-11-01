@@ -16,6 +16,10 @@ out/
 .cache/
 .eslintcache
 .turbo/
+*.tsbuildinfo
+backend/tests/**/*.js
+backend/tests/**/*.js.map
+backend/tests/**/*.d.ts
 
 # Logs
 npm-debug.log*
