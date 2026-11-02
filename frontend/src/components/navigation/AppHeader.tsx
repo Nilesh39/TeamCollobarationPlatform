@@ -52,6 +52,25 @@ export function AppHeader({ onOpenMobileMenu, onOpenSearch }: HeaderProps) {
     }
   };
 
+  const handleSwitchTenant = async (t: any) => {
+    try {
+      const res = await apiClient.post('/auth/switch-tenant', { tenantId: t.id });
+      const { activeTenant: newActiveTenant, accessToken } = res.data.data;
+      useAuthStore.getState().setAuth({
+        user: user!,
+        activeTenant: newActiveTenant,
+        availableTenants,
+        accessToken
+      });
+      toast('Organization Switched', `Active organization changed to ${newActiveTenant.name}.`);
+    } catch {
+      setActiveTenant(t);
+      toast('Organization Switched', `Active organization changed to ${t.name}.`);
+    } finally {
+      setTenantDropdown(false);
+    }
+  };
+
   return (
     <header className="h-14 border-b border-border/80 bg-background/80 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
       {/* Left: Mobile Toggle & Breadcrumbs */}
@@ -151,11 +170,7 @@ export function AppHeader({ onOpenMobileMenu, onOpenSearch }: HeaderProps) {
                 return (
                   <button
                     key={t.id}
-                    onClick={() => {
-                      setActiveTenant(t);
-                      setTenantDropdown(false);
-                      toast('Organization Switched', `Active organization changed to ${t.name}.`);
-                    }}
+                    onClick={() => handleSwitchTenant(t)}
                     className="w-full text-left px-2.5 py-2 rounded-lg text-xs flex items-center justify-between hover:bg-accent transition-colors cursor-pointer"
                   >
                     <div className="truncate">

@@ -31,7 +31,21 @@ export enum Permission {
   RAG_DOCUMENT_QUERY = 'rag_document:query'
 }
 
+export const ROLE_HIERARCHY: Record<TenantRole, number> = {
+  [TenantRole.SUPER_ADMIN]: 100,
+  [TenantRole.OWNER]: 90,
+  [TenantRole.ADMIN]: 70,
+  [TenantRole.PROJECT_MANAGER]: 50,
+  [TenantRole.MEMBER]: 30,
+  [TenantRole.GUEST]: 10
+};
+
+export function hasMinimumRole(userRole: TenantRole, requiredRole: TenantRole): boolean {
+  return (ROLE_HIERARCHY[userRole] ?? 0) >= (ROLE_HIERARCHY[requiredRole] ?? 0);
+}
+
 export const ROLE_PERMISSIONS: Record<TenantRole, Permission[]> = {
+  [TenantRole.SUPER_ADMIN]: Object.values(Permission),
   [TenantRole.OWNER]: Object.values(Permission),
   [TenantRole.ADMIN]: [
     Permission.MEMBER_INVITE,
@@ -46,6 +60,17 @@ export const ROLE_PERMISSIONS: Record<TenantRole, Permission[]> = {
     Permission.TASK_UPDATE,
     Permission.TASK_DELETE,
     Permission.AI_AGENT_MANAGE,
+    Permission.RAG_DOCUMENT_UPLOAD,
+    Permission.RAG_DOCUMENT_QUERY
+  ],
+  [TenantRole.PROJECT_MANAGER]: [
+    Permission.MEMBER_INVITE,
+    Permission.WORKSPACE_CREATE,
+    Permission.WORKSPACE_UPDATE,
+    Permission.PROJECT_CREATE,
+    Permission.TASK_CREATE,
+    Permission.TASK_UPDATE,
+    Permission.TASK_DELETE,
     Permission.RAG_DOCUMENT_UPLOAD,
     Permission.RAG_DOCUMENT_QUERY
   ],

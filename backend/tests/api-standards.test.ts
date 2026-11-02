@@ -37,6 +37,25 @@ describe('API Standards, Validation & Security Integration Tests', () => {
       expect(fieldNames).toContain('fullName');
     });
 
+    it('should reject invalid forgot-password payload with 400', async () => {
+      const res = await request(app).post('/api/v1/auth/forgot-password').send({
+        email: 'not-an-email'
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.errorCode).toBe('VALIDATION_ERROR');
+    });
+
+    it('should reject invalid reset-password payload with 400', async () => {
+      const res = await request(app).post('/api/v1/auth/reset-password').send({
+        token: '',
+        newPassword: 'weak'
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.errorCode).toBe('VALIDATION_ERROR');
+    });
+
     it('should reject malformed JSON syntax with 400 and RFC-7807', async () => {
       const res = await request(app)
         .post('/api/v1/auth/login')
@@ -71,6 +90,18 @@ describe('API Standards, Validation & Security Integration Tests', () => {
 
     it('should reject unauthenticated request to /api/v1/agents with 401', async () => {
       const res = await request(app).get('/api/v1/agents');
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should reject unauthenticated request to /api/v1/tenants with 401', async () => {
+      const res = await request(app).get('/api/v1/tenants');
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should reject unauthenticated request to /api/v1/tenants/current with 401', async () => {
+      const res = await request(app).get('/api/v1/tenants/current');
       expect(res.status).toBe(401);
       expect(res.body.success).toBe(false);
     });

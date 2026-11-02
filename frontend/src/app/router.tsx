@@ -18,6 +18,10 @@ import { AnalyticsPage } from '../pages/AnalyticsPage';
 import { NotificationsPage } from '../pages/NotificationsPage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { UserProfilePage } from '../pages/UserProfilePage';
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '../pages/ResetPasswordPage';
+import { VerifyEmailPage } from '../pages/VerifyEmailPage';
+import { ProtectedRoute } from '../components/navigation/ProtectedRoute';
 
 export const router = createBrowserRouter([
   // Public Landing & Marketing
@@ -34,10 +38,26 @@ export const router = createBrowserRouter([
     path: '/signup',
     element: <SignupPage />
   },
+  {
+    path: '/forgot-password',
+    element: <ForgotPasswordPage />
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />
+  },
+  {
+    path: '/verify-email',
+    element: <VerifyEmailPage />
+  },
   // Authenticated Application Shell
   {
     path: '/app',
-    element: <DashboardLayout />,
+    element: (
+      <ProtectedRoute>
+        <DashboardLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         index: true,

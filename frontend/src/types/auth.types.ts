@@ -1,12 +1,13 @@
+export type TenantRole = 'SUPER_ADMIN' | 'OWNER' | 'ADMIN' | 'PROJECT_MANAGER' | 'MEMBER' | 'GUEST';
+
 export interface User {
   id: string;
   email: string;
   fullName: string;
   avatarUrl?: string | null;
   isEmailVerified?: boolean;
+  isSuperAdmin?: boolean;
 }
-
-export type TenantRole = 'OWNER' | 'ADMIN' | 'MEMBER' | 'GUEST';
 
 export interface TenantSummary {
   id: string;
@@ -14,6 +15,18 @@ export interface TenantSummary {
   slug: string;
   role: TenantRole;
   plan?: string;
+  settings?: Record<string, any>;
+}
+
+export interface UserSession {
+  id: string;
+  userId: string;
+  tenantId?: string;
+  userAgent?: string;
+  ipAddress?: string;
+  createdAt: number;
+  lastActiveAt: number;
+  isCurrent?: boolean;
 }
 
 export interface AuthState {
@@ -30,5 +43,6 @@ export interface AuthState {
     accessToken: string;
   }) => void;
   setActiveTenant: (tenant: TenantSummary) => void;
+  setAvailableTenants: (tenants: TenantSummary[]) => void;
   clearAuth: () => void;
 }

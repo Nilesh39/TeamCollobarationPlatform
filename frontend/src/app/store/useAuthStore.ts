@@ -24,6 +24,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       activeTenant: tenant
     }),
 
+  setAvailableTenants: (tenants: TenantSummary[]) =>
+    set({
+      availableTenants: tenants
+    }),
+
   clearAuth: () =>
     set({
       user: null,

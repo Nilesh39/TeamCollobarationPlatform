@@ -4,6 +4,7 @@ import { env } from '../../config/env.config';
 class RedisManager {
   private client: Redis | null = null;
   private inMemoryFallback: Map<string, { value: string; expiresAt?: number }> = new Map();
+  private inMemorySets: Map<string, Set<string>> = new Map();
   private isFallbackMode = false;
 
   constructor() {
@@ -84,6 +85,61 @@ class RedisManager {
       }
     }
     this.inMemoryFallback.delete(key);
+    this.inMemorySets.delete(key);
+  }
+
+  public async sadd(key: string, ...members: string[]): Promise<number> {
+    if (!this.isFallbackMode && this.client && this.client.status === 'ready') {
+      try {
+        return await this.client.sadd(key, ...members);
+      } catch {
+        this.isFallbackMode = true;
+      }
+    }
+    let set = this.inMemorySets.get(key);
+    if (!set) {
+      set = new Set<string>();
+      this.inMemorySets.set(key, set);
+    }
+    let added = 0;
+    for (const m of members) {
+      if (!set.has(m)) {
+        set.add(m);
+        added++;
+      }
+    }
+    return added;
+  }
+
+  public async srem(key: string, ...members: string[]): Promise<number> {
+    if (!this.isFallbackMode && this.client && this.client.status === 'ready') {
+      try {
+        return await this.client.srem(key, ...members);
+      } catch {
+        this.isFallbackMode = true;
+      }
+    }
+    const set = this.inMemorySets.get(key);
+    if (!set) return 0;
+    let removed = 0;
+    for (const m of members) {
+      if (set.delete(m)) {
+        removed++;
+      }
+    }
+    return removed;
+  }
+
+  public async smembers(key: string): Promise<string[]> {
+    if (!this.isFallbackMode && this.client && this.client.status === 'ready') {
+      try {
+        return await this.client.smembers(key);
+      } catch {
+        this.isFallbackMode = true;
+      }
+    }
+    const set = this.inMemorySets.get(key);
+    return set ? Array.from(set) : [];
   }
 
   public async flushAll(): Promise<void> {
@@ -91,6 +147,7 @@ class RedisManager {
       await this.client.flushall();
     }
     this.inMemoryFallback.clear();
+    this.inMemorySets.clear();
   }
 
   public isHealthy(): boolean {

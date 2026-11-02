@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create Enums
 CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'INVITED', 'SUSPENDED');
-CREATE TYPE "TenantRole" AS ENUM ('OWNER', 'ADMIN', 'MEMBER', 'GUEST');
+CREATE TYPE "TenantRole" AS ENUM ('SUPER_ADMIN', 'OWNER', 'ADMIN', 'PROJECT_MANAGER', 'MEMBER', 'GUEST');
 CREATE TYPE "TaskStatus" AS ENUM ('BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'CANCELED');
 CREATE TYPE "TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
 CREATE TYPE "DocumentStatus" AS ENUM ('QUEUED', 'PROCESSING', 'INDEXED', 'FAILED');
@@ -33,6 +33,7 @@ CREATE TABLE "users" (
     "fullName" VARCHAR(100) NOT NULL,
     "avatarUrl" VARCHAR(500),
     "isEmailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "isSuperAdmin" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
@@ -286,3 +287,58 @@ CREATE TABLE "audit_logs" (
     CONSTRAINT "audit_logs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 CREATE INDEX "audit_logs_tenantId_createdAt_idx" ON "audit_logs"("tenantId", "createdAt");
+
+-- Tenant Invitations
+CREATE TABLE "tenant_invitations" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "tenantId" UUID NOT NULL,
+    "email" VARCHAR(255) NOT NULL,
+    "role" "TenantRole" NOT NULL DEFAULT 'MEMBER',
+    "token" VARCHAR(255) NOT NULL,
+    "invitedById" UUID,
+    "status" VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "tenant_invitations_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "tenant_invitations_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "tenant_invitations_invitedById_fkey" FOREIGN KEY ("invitedById") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX "tenant_invitations_token_key" ON "tenant_invitations"("token");
+CREATE INDEX "tenant_invitations_tenantId_email_idx" ON "tenant_invitations"("tenantId", "email");
+CREATE INDEX "tenant_invitations_token_idx" ON "tenant_invitations"("token");
+
+-- Auth Tokens (Email Verification & Password Reset)
+CREATE TABLE "auth_tokens" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID NOT NULL,
+    "type" VARCHAR(50) NOT NULL,
+    "token" VARCHAR(255) NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "auth_tokens_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "auth_tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX "auth_tokens_token_key" ON "auth_tokens"("token");
+CREATE INDEX "auth_tokens_userId_type_idx" ON "auth_tokens"("userId", "type");
+CREATE INDEX "auth_tokens_token_idx" ON "auth_tokens"("token");
+
+-- User Sessions
+CREATE TABLE "user_sessions" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "userId" UUID NOT NULL,
+    "refreshTokenHash" VARCHAR(255) NOT NULL,
+    "familyId" VARCHAR(100) NOT NULL,
+    "tenantId" UUID,
+    "userAgent" VARCHAR(255),
+    "ipAddress" VARCHAR(45),
+    "isRevoked" BOOLEAN NOT NULL DEFAULT false,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastActiveAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "user_sessions_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "user_sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX "user_sessions_refreshTokenHash_key" ON "user_sessions"("refreshTokenHash");
+CREATE INDEX "user_sessions_userId_isRevoked_idx" ON "user_sessions"("userId", "isRevoked");
+CREATE INDEX "user_sessions_familyId_idx" ON "user_sessions"("familyId");

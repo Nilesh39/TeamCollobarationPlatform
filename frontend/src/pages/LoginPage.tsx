@@ -150,14 +150,24 @@ export function LoginPage() {
                   required
                 />
 
-                <Input
-                  label="Password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-foreground">Password</label>
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs text-primary hover:underline font-medium"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
 
                 <Button type="submit" className="w-full mt-2" isLoading={loading}>
                   Sign In to Workspace <ArrowRight className="w-4 h-4 ml-1.5" />

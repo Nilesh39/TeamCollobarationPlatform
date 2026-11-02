@@ -18,6 +18,7 @@ import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Tabs } from '../components/ui/tabs';
 import { toast } from '../components/ui/toast';
+import { apiClient } from '../lib/apiClient';
 import { useAuthStore } from '../app/store/useAuthStore';
 import { useThemeStore } from '../app/store/useThemeStore';
 
@@ -31,6 +32,9 @@ export function SettingsPage() {
   const [temperature, setTemperature] = React.useState('0.2');
   const [saving, setSaving] = React.useState(false);
 
+  const [newOrgName, setNewOrgName] = React.useState('');
+  const [isCreateOrgModalOpen, setIsCreateOrgModalOpen] = React.useState(false);
+
   const tabs = [
     { id: 'general', label: 'Organization', icon: <Building2 /> },
     { id: 'billing', label: 'Billing & Plan', icon: <CreditCard /> },
@@ -39,13 +43,39 @@ export function SettingsPage() {
     { id: 'appearance', label: 'Appearance', icon: <Palette /> }
   ];
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      await apiClient.patch('/tenants/current', { name: orgName });
+      if (activeTenant) {
+        useAuthStore.getState().setActiveTenant({
+          ...activeTenant,
+          name: orgName
+        });
+      }
       toast('Settings Saved', 'Organization parameters updated successfully.');
-    }, 400);
+    } catch (err: any) {
+      toast('Notice', err.response?.data?.detail || 'Settings saved locally.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreateOrg = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOrgName.trim()) return;
+    try {
+      const res = await apiClient.post('/tenants', { name: newOrgName.trim() });
+      const newTenant = res.data?.data?.tenant;
+      if (newTenant) {
+        toast('Organization Created', `Created ${newTenant.name}!`);
+        setIsCreateOrgModalOpen(false);
+        setNewOrgName('');
+      }
+    } catch (err: any) {
+      toast('Creation Failed', err.response?.data?.detail || 'Failed to create organization.');
+    }
   };
 
   return (

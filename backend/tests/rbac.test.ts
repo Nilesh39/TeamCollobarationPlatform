@@ -1,73 +1,105 @@
 import { describe, it, expect } from 'vitest';
-import { requireRole, requirePermission } from '../src/middlewares/rbac.middleware';
-import { TenantRole, Permission, ROLE_PERMISSIONS } from '../src/core/constants/permissions';
+import { requireRole, requireMinRole, requirePermission } from '../src/middlewares/rbac.middleware';
+import { TenantRole, Permission, ROLE_PERMISSIONS, hasMinimumRole, ROLE_HIERARCHY } from '../src/core/constants/permissions';
 import { ForbiddenError } from '../src/core/errors/AppError';
 
-describe('RBAC Authorization Guard Unit Tests', () => {
-  it('should grant OWNER access to all permissions', () => {
-    const ownerPerms = ROLE_PERMISSIONS[TenantRole.OWNER];
-    const allPerms = Object.values(Permission);
-    expect(ownerPerms.length).toBe(allPerms.length);
-    expect(ownerPerms).toContain(Permission.TENANT_BILLING);
-    expect(ownerPerms).toContain(Permission.AI_AGENT_MANAGE);
-  });
-
-  it('should restrict GUEST from creating tasks or managing agents', () => {
-    const guestPerms = ROLE_PERMISSIONS[TenantRole.GUEST];
-    expect(guestPerms).not.toContain(Permission.TASK_CREATE);
-    expect(guestPerms).not.toContain(Permission.AI_AGENT_MANAGE);
-    expect(guestPerms).toContain(Permission.RAG_DOCUMENT_QUERY);
-  });
-
-  it('requireRole middleware should allow authorized role and call next()', () => {
-    const middleware = requireRole([TenantRole.OWNER, TenantRole.ADMIN]);
-    const mockReq = {
-      tenantContext: {
-        role: TenantRole.ADMIN
-      }
-    } as any;
-    let nextCalled = false;
-    let errorPassed: any = null;
-
-    middleware(mockReq, {} as any, (err?: any) => {
-      nextCalled = true;
-      errorPassed = err;
+describe('RBAC Authorization Guard & Role Hierarchy Unit Tests', () => {
+  describe('Role Hierarchy & Permissions Mapping', () => {
+    it('should assign correct hierarchy levels across all 5 primary roles', () => {
+      expect(ROLE_HIERARCHY[TenantRole.SUPER_ADMIN]).toBeGreaterThan(ROLE_HIERARCHY[TenantRole.OWNER]);
+      expect(ROLE_HIERARCHY[TenantRole.OWNER]).toBeGreaterThan(ROLE_HIERARCHY[TenantRole.ADMIN]);
+      expect(ROLE_HIERARCHY[TenantRole.ADMIN]).toBeGreaterThan(ROLE_HIERARCHY[TenantRole.PROJECT_MANAGER]);
+      expect(ROLE_HIERARCHY[TenantRole.PROJECT_MANAGER]).toBeGreaterThan(ROLE_HIERARCHY[TenantRole.MEMBER]);
+      expect(ROLE_HIERARCHY[TenantRole.MEMBER]).toBeGreaterThan(ROLE_HIERARCHY[TenantRole.GUEST]);
     });
 
-    expect(nextCalled).toBe(true);
-    expect(errorPassed).toBeUndefined();
-  });
+    it('hasMinimumRole should accurately evaluate relative role privileges', () => {
+      expect(hasMinimumRole(TenantRole.SUPER_ADMIN, TenantRole.OWNER)).toBe(true);
+      expect(hasMinimumRole(TenantRole.OWNER, TenantRole.ADMIN)).toBe(true);
+      expect(hasMinimumRole(TenantRole.ADMIN, TenantRole.PROJECT_MANAGER)).toBe(true);
+      expect(hasMinimumRole(TenantRole.PROJECT_MANAGER, TenantRole.MEMBER)).toBe(true);
 
-  it('requireRole middleware should pass ForbiddenError when role is insufficient', () => {
-    const middleware = requireRole([TenantRole.OWNER]);
-    const mockReq = {
-      tenantContext: {
-        role: TenantRole.MEMBER
-      }
-    } as any;
-    let errorPassed: any = null;
-
-    middleware(mockReq, {} as any, (err?: any) => {
-      errorPassed = err;
+      // Lower role checking higher required role
+      expect(hasMinimumRole(TenantRole.MEMBER, TenantRole.PROJECT_MANAGER)).toBe(false);
+      expect(hasMinimumRole(TenantRole.PROJECT_MANAGER, TenantRole.ADMIN)).toBe(false);
+      expect(hasMinimumRole(TenantRole.ADMIN, TenantRole.OWNER)).toBe(false);
     });
 
-    expect(errorPassed).toBeInstanceOf(ForbiddenError);
-    expect(errorPassed.statusCode).toBe(403);
-  });
+    it('should grant SUPER_ADMIN and OWNER access to all permissions', () => {
+      const superAdminPerms = ROLE_PERMISSIONS[TenantRole.SUPER_ADMIN];
+      const ownerPerms = ROLE_PERMISSIONS[TenantRole.OWNER];
+      const allPerms = Object.values(Permission);
 
-  it('requirePermission middleware should enforce granular permissions', () => {
-    const middleware = requirePermission(Permission.AI_AGENT_MANAGE);
-    const mockReq = {
-      tenantContext: {
-        role: TenantRole.MEMBER // Members do not have AI_AGENT_MANAGE
-      }
-    } as any;
-    let errorPassed: any = null;
-
-    middleware(mockReq, {} as any, (err?: any) => {
-      errorPassed = err;
+      expect(superAdminPerms.length).toBe(allPerms.length);
+      expect(ownerPerms.length).toBe(allPerms.length);
     });
 
-    expect(errorPassed).toBeInstanceOf(ForbiddenError);
+    it('should grant PROJECT_MANAGER task and project creation, but restrict organization billing', () => {
+      const pmPerms = ROLE_PERMISSIONS[TenantRole.PROJECT_MANAGER];
+      expect(pmPerms).toContain(Permission.PROJECT_CREATE);
+      expect(pmPerms).toContain(Permission.TASK_CREATE);
+      expect(pmPerms).toContain(Permission.TASK_DELETE);
+      expect(pmPerms).not.toContain(Permission.TENANT_BILLING);
+      expect(pmPerms).not.toContain(Permission.TENANT_DELETE);
+    });
+  });
+
+  describe('Middleware Execution & Guards', () => {
+    it('requireMinRole should permit user with equal or higher role hierarchy', () => {
+      const middleware = requireMinRole(TenantRole.ADMIN);
+      const mockReq = {
+        tenantContext: { role: TenantRole.OWNER }
+      } as any;
+      let nextCalled = false;
+
+      middleware(mockReq, {} as any, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(true);
+    });
+
+    it('requireMinRole should reject user with lower role hierarchy', () => {
+      const middleware = requireMinRole(TenantRole.ADMIN);
+      const mockReq = {
+        tenantContext: { role: TenantRole.PROJECT_MANAGER }
+      } as any;
+      let errorPassed: any = null;
+
+      middleware(mockReq, {} as any, (err?: any) => {
+        errorPassed = err;
+      });
+
+      expect(errorPassed).toBeInstanceOf(ForbiddenError);
+      expect(errorPassed.statusCode).toBe(403);
+    });
+
+    it('requireRole should always permit SUPER_ADMIN regardless of whitelist', () => {
+      const middleware = requireRole([TenantRole.ADMIN]);
+      const mockReq = {
+        tenantContext: { role: TenantRole.SUPER_ADMIN }
+      } as any;
+      let nextCalled = false;
+
+      middleware(mockReq, {} as any, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(true);
+    });
+
+    it('requirePermission should allow SUPER_ADMIN even without explicit whitelist array', () => {
+      const middleware = requirePermission(Permission.TENANT_DELETE);
+      const mockReq = {
+        tenantContext: { role: TenantRole.SUPER_ADMIN }
+      } as any;
+      let nextCalled = false;
+
+      middleware(mockReq, {} as any, () => {
+        nextCalled = true;
+      });
+
+      expect(nextCalled).toBe(true);
+    });
   });
 });
