@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- Create Enums
 CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'INVITED', 'SUSPENDED');
 CREATE TYPE "TenantRole" AS ENUM ('SUPER_ADMIN', 'OWNER', 'ADMIN', 'PROJECT_MANAGER', 'MEMBER', 'GUEST');
-CREATE TYPE "TaskStatus" AS ENUM ('BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'CANCELED');
+CREATE TYPE "TaskStatus" AS ENUM ('BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'DONE', 'BLOCKED', 'CANCELED');
 CREATE TYPE "TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
 CREATE TYPE "ProjectStatus" AS ENUM ('PLANNING', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'ARCHIVED');
 CREATE TYPE "ProjectPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
@@ -174,6 +174,7 @@ CREATE TABLE "tasks" (
     "description" TEXT,
     "status" "TaskStatus" NOT NULL DEFAULT 'TODO',
     "priority" "TaskPriority" NOT NULL DEFAULT 'MEDIUM',
+    "startDate" TIMESTAMP(3),
     "dueDate" TIMESTAMP(3),
     "orderIndex" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
     "metadata" JSONB NOT NULL DEFAULT '{}',
@@ -199,6 +200,53 @@ CREATE TABLE "task_assignees" (
 );
 CREATE UNIQUE INDEX "task_assignees_taskId_userId_key" ON "task_assignees"("taskId", "userId");
 
+-- Task Labels
+CREATE TABLE "task_labels" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "tenantId" UUID NOT NULL,
+    "taskId" UUID NOT NULL,
+    "name" VARCHAR(50) NOT NULL,
+    "color" VARCHAR(20) NOT NULL DEFAULT '#6366f1',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "task_labels_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "task_labels_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX "task_labels_taskId_idx" ON "task_labels"("taskId");
+CREATE INDEX "task_labels_tenantId_name_idx" ON "task_labels"("tenantId", "name");
+
+-- Task Attachments
+CREATE TABLE "task_attachments" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "tenantId" UUID NOT NULL,
+    "taskId" UUID NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "fileUrl" VARCHAR(1000) NOT NULL,
+    "fileSize" INTEGER NOT NULL DEFAULT 0,
+    "mimeType" VARCHAR(100) NOT NULL DEFAULT 'application/octet-stream',
+    "uploaderId" UUID,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "task_attachments_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "task_attachments_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "task_attachments_uploaderId_fkey" FOREIGN KEY ("uploaderId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE INDEX "task_attachments_taskId_idx" ON "task_attachments"("taskId");
+
+-- Task Dependencies
+CREATE TABLE "task_dependencies" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "tenantId" UUID NOT NULL,
+    "taskId" UUID NOT NULL,
+    "dependsOnTaskId" UUID NOT NULL,
+    "type" VARCHAR(30) NOT NULL DEFAULT 'BLOCKS',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "task_dependencies_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "task_dependencies_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "task_dependencies_dependsOnTaskId_fkey" FOREIGN KEY ("dependsOnTaskId") REFERENCES "tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX "task_dependencies_taskId_dependsOnTaskId_key" ON "task_dependencies"("taskId", "dependsOnTaskId");
+CREATE INDEX "task_dependencies_taskId_idx" ON "task_dependencies"("taskId");
+CREATE INDEX "task_dependencies_dependsOnTaskId_idx" ON "task_dependencies"("dependsOnTaskId");
+
 -- Task Comments
 CREATE TABLE "task_comments" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
@@ -219,10 +267,11 @@ CREATE TABLE "task_activities" (
     "taskId" UUID NOT NULL,
     "actorId" UUID NOT NULL,
     "action" VARCHAR(100) NOT NULL,
-    "changes" JSONB NOT NULL,
+    "changes" JSONB NOT NULL DEFAULT '{}',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "task_activities_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "task_activities_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "task_activities_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "task_activities_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE INDEX "task_activities_taskId_createdAt_idx" ON "task_activities"("taskId", "createdAt");
 

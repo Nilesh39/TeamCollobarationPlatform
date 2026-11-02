@@ -5,76 +5,151 @@ import {
   ChevronRight,
   Plus,
   Clock,
-  MapPin,
+  Filter,
   CheckCircle2,
-  Calendar as CalendarIcon
+  AlertCircle
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Modal } from '../components/ui/modal';
-import { Input } from '../components/ui/input';
-import { toast } from '../components/ui/toast';
-
-interface CalendarEvent {
-  id: string;
-  day: number;
-  title: string;
-  time: string;
-  category: 'sprint' | 'meeting' | 'review' | 'release';
-}
-
-const INITIAL_EVENTS: CalendarEvent[] = [
-  { id: 'ev-1', day: 2, title: 'pgvector HNSW Index Freeze', time: '10:00 AM', category: 'sprint' },
-  { id: 'ev-2', day: 4, title: 'Auth Token Rotation Signoff', time: '02:00 PM', category: 'review' },
-  { id: 'ev-3', day: 10, title: 'Daily Architecture Standup', time: '11:00 AM', category: 'meeting' },
-  { id: 'ev-4', day: 15, title: 'Gemini 1.5 Pro Tooling Review', time: '03:30 PM', category: 'review' },
-  { id: 'ev-5', day: 20, title: 'Phase 2 Frontend Release', time: '05:00 PM', category: 'release' }
-];
+import { CreateTaskModal } from '../components/modals/CreateTaskModal';
+import { TaskDetailDrawer } from '../components/tasks/TaskDetailDrawer';
+import { apiClient } from '../lib/apiClient';
+import { TaskItem, TaskPriority } from '../types/task.types';
 
 export function CalendarPage() {
-  const [events, setEvents] = React.useState<CalendarEvent[]>(INITIAL_EVENTS);
-  const [selectedEvent, setSelectedEvent] = React.useState<CalendarEvent | null>(null);
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [tasks, setTasks] = React.useState<TaskItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
-  // New Event Form State
-  const [eventTitle, setEventTitle] = React.useState('');
-  const [eventDay, setEventDay] = React.useState(12);
-  const [eventTime, setEventTime] = React.useState('11:00 AM');
-  const [eventCategory, setEventCategory] = React.useState<CalendarEvent['category']>('meeting');
+  // Current viewed month and year
+  const [currentDate, setCurrentDate] = React.useState(new Date(2026, 10, 1)); // November 2026
 
-  const daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1);
+  // Selected date for new task modal
+  const [selectedDateForModal, setSelectedDateForModal] = React.useState('2026-11-20');
+  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
 
-  const handleAddEvent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!eventTitle.trim()) return;
+  // Drawer
+  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false);
 
-    const newEv: CalendarEvent = {
-      id: `ev-${Date.now().toString(36)}`,
-      day: Number(eventDay),
-      title: eventTitle,
-      time: eventTime,
-      category: eventCategory
-    };
+  // Priority filter
+  const [priorityFilter, setPriorityFilter] = React.useState<string>('ALL');
 
-    setEvents([...events, newEv]);
-    toast('Event Scheduled', `"${eventTitle}" added on Nov ${eventDay}.`);
-    setEventTitle('');
-    setIsModalOpen(false);
+  // Load tasks from backend API
+  React.useEffect(() => {
+    setLoading(true);
+    apiClient
+      .get('/tasks')
+      .then((res) => {
+        const list = res.data?.data || [];
+        if (list.length > 0) {
+          setTasks(list);
+        } else {
+          // Fallback realistic tasks with due dates in Nov 2026
+          setTasks([
+            {
+              id: 'task-101',
+              tenantId: '00000000-0000-0000-0000-000000000001',
+              projectId: '00000000-0000-0000-0000-000000000002',
+              project: { id: '00000000-0000-0000-0000-000000000002', name: 'Core Architecture', key: 'CORE' },
+              taskNumber: 101,
+              title: 'Multi-Tenant Token Refresh Rotation',
+              status: 'COMPLETED',
+              priority: 'URGENT',
+              dueDate: '2026-11-04T00:00:00.000Z',
+              orderIndex: 1000,
+              assignees: [],
+              labels: [],
+              createdAt: '2026-11-01T10:00:00.000Z',
+              updatedAt: '2026-11-01T12:00:00.000Z'
+            },
+            {
+              id: 'task-102',
+              tenantId: '00000000-0000-0000-0000-000000000001',
+              projectId: '00000000-0000-0000-0000-000000000002',
+              project: { id: '00000000-0000-0000-0000-000000000002', name: 'Core Architecture', key: 'CORE' },
+              taskNumber: 102,
+              title: 'pgvector HNSW Cosine Similarity Indexing',
+              status: 'IN_PROGRESS',
+              priority: 'HIGH',
+              dueDate: '2026-11-12T00:00:00.000Z',
+              orderIndex: 2000,
+              assignees: [],
+              labels: [],
+              createdAt: '2026-11-01T11:00:00.000Z',
+              updatedAt: '2026-11-01T11:00:00.000Z'
+            },
+            {
+              id: 'task-103',
+              tenantId: '00000000-0000-0000-0000-000000000001',
+              projectId: '00000000-0000-0000-0000-000000000002',
+              project: { id: '00000000-0000-0000-0000-000000000002', name: 'Core Architecture', key: 'CORE' },
+              taskNumber: 103,
+              title: 'Interactive Kanban Drag and Drop Visualizer',
+              status: 'IN_REVIEW',
+              priority: 'HIGH',
+              dueDate: '2026-11-20T00:00:00.000Z',
+              orderIndex: 3000,
+              assignees: [],
+              labels: [],
+              createdAt: '2026-11-01T12:00:00.000Z',
+              updatedAt: '2026-11-01T14:00:00.000Z'
+            },
+            {
+              id: 'task-104',
+              tenantId: '00000000-0000-0000-0000-000000000001',
+              projectId: '00000000-0000-0000-0000-000000000002',
+              project: { id: '00000000-0000-0000-0000-000000000002', name: 'Core Architecture', key: 'CORE' },
+              taskNumber: 104,
+              title: 'BullMQ Agent Task Dispatcher Queue',
+              status: 'TODO',
+              priority: 'MEDIUM',
+              dueDate: '2026-11-25T00:00:00.000Z',
+              orderIndex: 4000,
+              assignees: [],
+              labels: [],
+              createdAt: '2026-11-01T13:00:00.000Z',
+              updatedAt: '2026-11-01T13:00:00.000Z'
+            }
+          ]);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Compute month layout
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 is Sunday
+  const daysInCurrentMonth = new Date(year, month + 1, 0).getDate();
+
+  // Prev / Next month handlers
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
   };
 
-  const getCategoryBadge = (cat: CalendarEvent['category']) => {
-    switch (cat) {
-      case 'sprint':
-        return 'bg-blue-500/10 text-primary border-primary/20';
-      case 'meeting':
-        return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-      case 'review':
-        return 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
-      case 'release':
-        return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
-    }
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
   };
+
+  const handleToday = () => {
+    setCurrentDate(new Date(2026, 10, 1)); // default sprint date Nov 2026
+  };
+
+  // Open day to add task
+  const handleDayClick = (dayNumber: number) => {
+    const formattedDay = dayNumber < 10 ? `0${dayNumber}` : `${dayNumber}`;
+    const formattedMonth = month + 1 < 10 ? `0${month + 1}` : `${month + 1}`;
+    setSelectedDateForModal(`${year}-${formattedMonth}-${formattedDay}`);
+    setIsCreateModalOpen(true);
+  };
+
+  const filteredTasks = tasks.filter((t) => {
+    return priorityFilter === 'ALL' || t.priority === priorityFilter;
+  });
 
   return (
     <div className="space-y-6">
@@ -82,169 +157,180 @@ export function CalendarPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Sprint Calendar</h1>
-            <Badge variant="cyan">November 2026</Badge>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Task Calendar</h1>
+            <Badge variant="cyan">{monthName}</Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Coordinate release dates, sprint deliverables, and AI agent reasoning loops.
+            Visual deadline scheduler. Click any day to create a task scheduled for that date, or click a task chip to inspect details.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" className="h-8 w-8">
+          {/* Navigation Controls */}
+          <div className="flex items-center gap-1 bg-accent/40 p-1 rounded-xl border border-border">
+            <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-7 w-7">
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="text-xs font-semibold px-2">November 2026</span>
-            <Button variant="outline" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="sm" onClick={handleToday} className="h-7 px-2.5 text-xs font-semibold">
+              Today
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-7 w-7">
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
 
-          <Button size="sm" onClick={() => setIsModalOpen(true)}>
-            <Plus className="w-3.5 h-3.5 mr-1" /> Schedule Event
+          {/* Add Task Button */}
+          <Button
+            onClick={() => {
+              setSelectedDateForModal('2026-11-20');
+              setIsCreateModalOpen(true);
+            }}
+            size="sm"
+          >
+            <Plus className="w-3.5 h-3.5 mr-1" /> Add Task
           </Button>
         </div>
       </div>
 
-      {/* Calendar Days Grid */}
-      <Card className="p-4 overflow-hidden">
-        {/* Days of week header */}
-        <div className="grid grid-cols-7 gap-2 pb-3 text-center border-b border-border/70 text-xs font-semibold text-muted-foreground">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-            <div key={day}>{day}</div>
+      {/* Priority Filter Strip */}
+      <div className="flex items-center justify-between bg-card p-3 rounded-xl border border-border text-xs">
+        <span className="text-muted-foreground font-medium text-[11px]">
+          Filter calendar tasks by priority:
+        </span>
+        <div className="flex items-center gap-1 bg-accent/20 p-0.5 rounded-lg border border-border">
+          {['ALL', 'URGENT', 'HIGH', 'MEDIUM', 'LOW'].map((p) => (
+            <button
+              key={p}
+              onClick={() => setPriorityFilter(p)}
+              className={`px-2.5 py-1 rounded text-[10px] font-semibold transition-colors cursor-pointer ${
+                priorityFilter === p
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {p}
+            </button>
           ))}
         </div>
+      </div>
 
-        {/* Month Day Slots */}
-        <div className="grid grid-cols-7 gap-2 pt-2">
-          {daysInMonth.map((day) => {
-            const dayEvents = events.filter((e) => e.day === day);
-            const isToday = day === 1;
+      {/* Calendar Month Grid */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
+        {/* Days of Week Header */}
+        <div className="grid grid-cols-7 border-b border-border bg-muted/40 text-center text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-2">
+          <div>Sun</div>
+          <div>Mon</div>
+          <div>Tue</div>
+          <div>Wed</div>
+          <div>Thu</div>
+          <div>Fri</div>
+          <div>Sat</div>
+        </div>
+
+        {/* Days Grid */}
+        <div className="grid grid-cols-7 divide-x divide-y divide-border/60">
+          {/* Empty offset cells before 1st of month */}
+          {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+            <div key={`offset-${i}`} className="min-h-[110px] bg-accent/5 p-2" />
+          ))}
+
+          {/* Month Day Cells */}
+          {Array.from({ length: daysInCurrentMonth }).map((_, i) => {
+            const dayNum = i + 1;
+            const formattedDay = dayNum < 10 ? `0${dayNum}` : `${dayNum}`;
+            const formattedMonth = month + 1 < 10 ? `0${month + 1}` : `${month + 1}`;
+            const cellDateStr = `${year}-${formattedMonth}-${formattedDay}`;
+
+            // Find tasks due on this date
+            const dayTasks = filteredTasks.filter((t) => {
+              if (!t.dueDate) return false;
+              return t.dueDate.startsWith(cellDateStr);
+            });
+
+            const isToday = dayNum === 2 && month === 10; // nov 2
 
             return (
               <div
-                key={day}
-                className={`min-h-[96px] p-2 rounded-lg border transition-all ${
-                  isToday
-                    ? 'border-primary/60 bg-primary/5'
-                    : 'border-border/60 hover:border-border hover:bg-accent/20'
+                key={`day-${dayNum}`}
+                onClick={() => handleDayClick(dayNum)}
+                className={`min-h-[110px] p-2 hover:bg-accent/20 transition-colors cursor-pointer flex flex-col group ${
+                  isToday ? 'bg-primary/5' : ''
                 }`}
               >
-                <div className="flex items-center justify-between text-xs font-semibold mb-1">
-                  <span className={isToday ? 'text-primary font-bold' : 'text-muted-foreground'}>{day}</span>
-                  {dayEvents.length > 0 && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                  )}
+                {/* Day Header */}
+                <div className="flex items-center justify-between pb-1">
+                  <span
+                    className={`text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center ${
+                      isToday
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-foreground group-hover:text-primary transition-colors'
+                    }`}
+                  >
+                    {dayNum}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                    + add
+                  </span>
                 </div>
 
-                <div className="space-y-1">
-                  {dayEvents.map((ev) => (
-                    <button
-                      key={ev.id}
-                      onClick={() => setSelectedEvent(ev)}
-                      className={`w-full text-left p-1 rounded text-[10px] font-medium truncate block border cursor-pointer ${getCategoryBadge(
-                        ev.category
-                      )}`}
+                {/* Day Tasks List */}
+                <div className="space-y-1 mt-1 flex-1">
+                  {dayTasks.map((t) => (
+                    <div
+                      key={t.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTaskId(t.id);
+                        setIsDrawerOpen(true);
+                      }}
+                      className={`text-[10px] p-1 rounded font-medium truncate border transition-all hover:scale-[1.02] ${
+                        t.priority === 'URGENT'
+                          ? 'bg-rose-500/15 border-rose-500/40 text-rose-500'
+                          : t.priority === 'HIGH'
+                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-500'
+                          : t.priority === 'MEDIUM'
+                          ? 'bg-blue-500/15 border-blue-500/40 text-blue-500'
+                          : 'bg-muted/80 border-border text-foreground'
+                      }`}
+                      title={`${t.project?.key ? `${t.project.key}-${t.taskNumber}: ` : ''}${t.title}`}
                     >
-                      {ev.title}
-                    </button>
+                      {t.project?.key ? `${t.project.key}-${t.taskNumber} ` : ''}
+                      {t.title}
+                    </div>
                   ))}
                 </div>
               </div>
             );
           })}
         </div>
-      </Card>
+      </div>
 
-      {/* Modal: Schedule Event */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Schedule Milestone or Meeting"
-        description="Add a milestone, standup or release target to the shared workspace calendar."
-      >
-        <form onSubmit={handleAddEvent} className="space-y-4 pt-2">
-          <Input
-            label="Event Title"
-            value={eventTitle}
-            onChange={(e) => setEventTitle(e.target.value)}
-            placeholder="e.g. Gemini Function Calling Review"
-            required
-            autoFocus
-          />
+      {/* Quick Task Creation Modal */}
+      <CreateTaskModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        initialDueDate={selectedDateForModal}
+        onTaskCreated={(newTask) => {
+          setTasks((prev) => [newTask, ...prev]);
+        }}
+      />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Day of Month (1-30)"
-              type="number"
-              min={1}
-              max={30}
-              value={eventDay}
-              onChange={(e) => setEventDay(Number(e.target.value))}
-              required
-            />
-            <Input
-              label="Time"
-              type="text"
-              value={eventTime}
-              onChange={(e) => setEventTime(e.target.value)}
-              placeholder="e.g. 02:00 PM"
-              required
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-foreground/80">Category</label>
-            <select
-              value={eventCategory}
-              onChange={(e) => setEventCategory(e.target.value as any)}
-              className="w-full h-9 rounded-md border border-input bg-background/60 px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="sprint">Sprint Task</option>
-              <option value="meeting">Team Meeting</option>
-              <option value="review">Architecture Review</option>
-              <option value="release">Production Release</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/80">
-            <Button type="button" variant="outline" size="sm" onClick={() => setIsModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" size="sm">
-              Schedule Event
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Modal: Event Detail Inspector */}
-      {selectedEvent && (
-        <Modal
-          isOpen={true}
-          onClose={() => setSelectedEvent(null)}
-          title={selectedEvent.title}
-          description={`Scheduled for November ${selectedEvent.day}, 2026 at ${selectedEvent.time}`}
-        >
-          <div className="space-y-4 pt-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Type:</span>
-              <Badge variant="cyan" className="uppercase text-[10px]">
-                {selectedEvent.category}
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Automated reminder linked to active sprint projects. Notifications will be dispatched to project members via Socket.IO.
-            </p>
-            <div className="flex justify-end pt-3 border-t border-border/80">
-              <Button size="sm" onClick={() => setSelectedEvent(null)}>
-                Close
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* Task Detail Drawer */}
+      <TaskDetailDrawer
+        taskId={selectedTaskId}
+        isOpen={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedTaskId(null);
+        }}
+        allTasks={tasks}
+        onTaskUpdated={(updated) => {
+          setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+        }}
+        onTaskDeleted={(deletedId) => {
+          setTasks((prev) => prev.filter((t) => t.id !== deletedId));
+        }}
+      />
     </div>
   );
 }
