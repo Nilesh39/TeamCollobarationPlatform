@@ -7,6 +7,9 @@ CREATE TYPE "UserStatus" AS ENUM ('ACTIVE', 'INVITED', 'SUSPENDED');
 CREATE TYPE "TenantRole" AS ENUM ('SUPER_ADMIN', 'OWNER', 'ADMIN', 'PROJECT_MANAGER', 'MEMBER', 'GUEST');
 CREATE TYPE "TaskStatus" AS ENUM ('BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'CANCELED');
 CREATE TYPE "TaskPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
+CREATE TYPE "ProjectStatus" AS ENUM ('PLANNING', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'ARCHIVED');
+CREATE TYPE "ProjectPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'URGENT');
+CREATE TYPE "MilestoneStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'COMPLETED');
 CREATE TYPE "DocumentStatus" AS ENUM ('QUEUED', 'PROCESSING', 'INDEXED', 'FAILED');
 CREATE TYPE "MessageSender" AS ENUM ('USER', 'AGENT', 'SYSTEM', 'TOOL');
 CREATE TYPE "WorkflowStatus" AS ENUM ('ACTIVE', 'PAUSED', 'DRAFT');
@@ -94,15 +97,71 @@ CREATE TABLE "projects" (
     "name" VARCHAR(120) NOT NULL,
     "key" VARCHAR(20) NOT NULL,
     "description" TEXT,
-    "status" VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    "status" "ProjectStatus" NOT NULL DEFAULT 'PLANNING',
+    "priority" "ProjectPriority" NOT NULL DEFAULT 'MEDIUM',
+    "startDate" TIMESTAMP(3),
+    "dueDate" TIMESTAMP(3),
+    "managerId" UUID,
+    "progress" INTEGER NOT NULL DEFAULT 0,
+    "isArchived" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "projects_pkey" PRIMARY KEY ("id"),
     CONSTRAINT "projects_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "projects_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "projects_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "projects_managerId_fkey" FOREIGN KEY ("managerId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 CREATE UNIQUE INDEX "projects_tenantId_key_key" ON "projects"("tenantId", "key");
 CREATE INDEX "projects_tenantId_workspaceId_idx" ON "projects"("tenantId", "workspaceId");
+CREATE INDEX "projects_tenantId_status_idx" ON "projects"("tenantId", "status");
+CREATE INDEX "projects_tenantId_isArchived_idx" ON "projects"("tenantId", "isArchived");
+
+-- Project Members
+CREATE TABLE "project_members" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "tenantId" UUID NOT NULL,
+    "projectId" UUID NOT NULL,
+    "userId" UUID NOT NULL,
+    "role" VARCHAR(50) NOT NULL DEFAULT 'MEMBER',
+    "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "project_members_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "project_members_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "project_members_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX "project_members_projectId_userId_key" ON "project_members"("projectId", "userId");
+CREATE INDEX "project_members_tenantId_projectId_idx" ON "project_members"("tenantId", "projectId");
+
+-- Milestones
+CREATE TABLE "milestones" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "tenantId" UUID NOT NULL,
+    "projectId" UUID NOT NULL,
+    "title" VARCHAR(200) NOT NULL,
+    "description" TEXT,
+    "dueDate" TIMESTAMP(3),
+    "status" "MilestoneStatus" NOT NULL DEFAULT 'OPEN',
+    "orderIndex" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "milestones_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "milestones_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX "milestones_tenantId_projectId_status_idx" ON "milestones"("tenantId", "projectId", "status");
+
+-- Project Activities
+CREATE TABLE "project_activities" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "tenantId" UUID NOT NULL,
+    "projectId" UUID NOT NULL,
+    "actorId" UUID NOT NULL,
+    "action" VARCHAR(100) NOT NULL,
+    "details" JSONB NOT NULL DEFAULT '{}',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "project_activities_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "project_activities_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "project_activities_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX "project_activities_projectId_createdAt_idx" ON "project_activities"("projectId", "createdAt");
 
 -- Tasks table
 CREATE TABLE "tasks" (

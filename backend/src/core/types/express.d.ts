@@ -6,6 +6,9 @@ declare global {
       user?: {
         userId: string;
         email: string;
+        tenantId?: string;
+        role?: TenantRole;
+        isSuperAdmin?: boolean;
       };
       tenantContext?: {
         tenantId: string;

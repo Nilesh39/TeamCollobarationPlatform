@@ -15,7 +15,10 @@ export function authenticate(req: Request, res: Response, next: NextFunction): v
     const payload = verifyAccessToken(token);
     req.user = {
       userId: payload.userId,
-      email: payload.email
+      email: payload.email,
+      tenantId: payload.tenantId,
+      role: payload.role,
+      isSuperAdmin: payload.isSuperAdmin
     };
     next();
   } catch (error) {
