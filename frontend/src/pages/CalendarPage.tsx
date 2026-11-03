@@ -231,7 +231,7 @@ export function CalendarPage() {
         <div className="grid grid-cols-7 divide-x divide-y divide-border/60">
           {/* Empty offset cells before 1st of month */}
           {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-            <div key={`offset-${i}`} className="min-h-[110px] bg-accent/5 p-2" />
+            <div key={`offset-${i}`} className="min-h-[135px] xl:min-h-[160px] bg-accent/5 p-2.5" />
           ))}
 
           {/* Month Day Cells */}
@@ -253,28 +253,28 @@ export function CalendarPage() {
               <div
                 key={`day-${dayNum}`}
                 onClick={() => handleDayClick(dayNum)}
-                className={`min-h-[110px] p-2 hover:bg-accent/20 transition-colors cursor-pointer flex flex-col group ${
+                className={`min-h-[135px] xl:min-h-[160px] p-2.5 hover:bg-accent/20 transition-colors cursor-pointer flex flex-col group ${
                   isToday ? 'bg-primary/5' : ''
                 }`}
               >
                 {/* Day Header */}
-                <div className="flex items-center justify-between pb-1">
+                <div className="flex items-center justify-between pb-1.5">
                   <span
                     className={`text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center ${
                       isToday
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'bg-primary text-primary-foreground shadow-xs'
                         : 'text-foreground group-hover:text-primary transition-colors'
                     }`}
                   >
                     {dayNum}
                   </span>
-                  <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-[11px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                     + add
                   </span>
                 </div>
 
                 {/* Day Tasks List */}
-                <div className="space-y-1 mt-1 flex-1">
+                <div className="space-y-1.5 mt-1 flex-1">
                   {dayTasks.map((t) => (
                     <div
                       key={t.id}
@@ -283,11 +283,11 @@ export function CalendarPage() {
                         setSelectedTaskId(t.id);
                         setIsDrawerOpen(true);
                       }}
-                      className={`text-[10px] p-1 rounded font-medium truncate border transition-all hover:scale-[1.02] ${
+                      className={`text-xs p-1.5 rounded-md font-medium truncate border shadow-xs transition-all hover:scale-[1.01] ${
                         t.priority === 'URGENT'
-                          ? 'bg-rose-500/15 border-rose-500/40 text-rose-500'
+                          ? 'bg-rose-500/15 border-rose-500/40 text-rose-500 font-semibold'
                           : t.priority === 'HIGH'
-                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-500'
+                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-500 font-semibold'
                           : t.priority === 'MEDIUM'
                           ? 'bg-blue-500/15 border-blue-500/40 text-blue-500'
                           : 'bg-muted/80 border-border text-foreground'

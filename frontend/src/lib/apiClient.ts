@@ -89,7 +89,7 @@ apiClient.interceptors.response.use(
         }
       } catch (refreshErr) {
         processQueue(refreshErr as Error, null);
-        useAuthStore.getState().clearAuth();
+        // Do not kick the user out of their session on transient backend offline / refresh errors
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;

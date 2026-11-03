@@ -169,7 +169,7 @@ export function AiAssistantPage() {
             )}
 
             <div
-              className={`max-w-2xl rounded-2xl px-4 py-3 text-xs leading-relaxed ${
+              className={`max-w-3xl xl:max-w-4xl rounded-2xl px-5 py-3.5 text-sm leading-relaxed ${
                 msg.sender === 'user'
                   ? 'bg-primary text-primary-foreground font-medium rounded-tr-none'
                   : 'bg-card border border-border text-foreground rounded-tl-none whitespace-pre-wrap'

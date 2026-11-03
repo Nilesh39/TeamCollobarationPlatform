@@ -462,7 +462,7 @@ export function KanbanBoardPage() {
 
       {/* VIEW 1: KANBAN BOARD (Drag & Drop) */}
       {viewMode === 'kanban' && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 overflow-x-auto pb-4 items-start">
+        <div className="flex gap-4.5 overflow-x-auto pb-6 items-start w-full min-h-[calc(100vh-230px)]">
           {COLUMNS.map((col) => {
             const colTasks = filteredTasks.filter((t) => t.status === col.id);
             const isOver = dragOverColumn === col.id;
@@ -473,34 +473,34 @@ export function KanbanBoardPage() {
                 onDragOver={(e) => handleDragOver(e, col.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, col.id)}
-                className={`flex flex-col rounded-xl border p-3 min-w-[270px] transition-all duration-200 ${
+                className={`flex flex-col rounded-2xl border p-4 min-w-[290px] xl:min-w-[320px] 2xl:min-w-[350px] flex-1 max-w-[420px] transition-all duration-200 shadow-xs ${
                   isOver
                     ? 'bg-primary/10 border-primary ring-2 ring-primary/30 scale-[1.01]'
                     : col.color
                 }`}
               >
                 {/* Column Header */}
-                <div className="flex items-center justify-between pb-3 px-1 border-b border-border/60 mb-3">
+                <div className="flex items-center justify-between pb-3 px-1 border-b border-border/60 mb-3.5">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs text-foreground uppercase tracking-wider">
+                    <span className="font-bold text-sm text-foreground tracking-tight">
                       {col.title}
                     </span>
-                    <Badge variant={col.badgeVariant} className="text-[10px] px-1.5 py-0">
+                    <Badge variant={col.badgeVariant} className="text-xs px-2 py-0.5">
                       {colTasks.length}
                     </Badge>
                   </div>
 
                   <button
                     onClick={() => handleOpenNewTaskInCol(col.id)}
-                    className="p-1 rounded hover:bg-background/80 text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-background text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
                     title={`Add task in ${col.title}`}
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
 
                 {/* Task Cards Column Body */}
-                <div className="space-y-3 min-h-[350px]">
+                <div className="space-y-3.5 min-h-[400px]">
                   {colTasks.map((task) => {
                     const isDragging = draggedTaskId === task.id;
 
@@ -510,32 +510,39 @@ export function KanbanBoardPage() {
                         draggable
                         onDragStart={(e) => handleDragStart(e, task.id)}
                         onClick={() => handleOpenTask(task.id)}
-                        className={`group relative p-3.5 rounded-xl border border-border bg-card hover:border-primary/60 hover:shadow-md transition-all duration-200 cursor-grab active:cursor-grabbing space-y-2.5 ${
+                        className={`group relative p-4 rounded-xl border border-border bg-card hover:border-primary/60 hover:shadow-lg transition-all duration-200 cursor-grab active:cursor-grabbing space-y-3 ${
                           isDragging ? 'opacity-40 scale-95 border-dashed border-primary' : ''
                         }`}
                       >
                         {/* Card Top: Key & Priority */}
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-accent/60 text-muted-foreground">
+                          <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-accent text-foreground">
                             {task.project?.key ? `${task.project.key}-${task.taskNumber}` : `TASK-${task.taskNumber}`}
                           </span>
                           {getPriorityBadge(task.priority)}
                         </div>
 
                         {/* Title */}
-                        <h4 className="text-xs font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                        <h4 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                           {task.title}
                         </h4>
 
+                        {/* Description Preview */}
+                        {task.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                            {task.description}
+                          </p>
+                        )}
+
                         {/* Labels row */}
                         {(task.labels || []).length > 0 && (
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-1.5">
                             {task.labels.map((l) => (
                               <span
                                 key={l.id}
-                                className="text-[10px] font-medium px-1.5 py-0.2 rounded"
+                                className="text-xs font-medium px-2 py-0.5 rounded-md"
                                 style={{
-                                  backgroundColor: `${l.color}15`,
+                                  backgroundColor: `${l.color}18`,
                                   color: l.color
                                 }}
                               >
@@ -547,17 +554,17 @@ export function KanbanBoardPage() {
 
                         {/* Subtasks Progress */}
                         {(task.subtasks || []).length > 0 && (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <CheckSquare className="w-3 h-3 text-primary" /> Subtasks
+                          <div className="space-y-1.5 pt-1">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1.5 font-medium">
+                                <CheckSquare className="w-3.5 h-3.5 text-primary" /> Subtasks
                               </span>
-                              <span>
+                              <span className="font-mono text-[11px]">
                                 {task.subtasks?.filter((s) => s.status === 'COMPLETED' || s.status === 'DONE').length}/
                                 {task.subtasks?.length}
                               </span>
                             </div>
-                            <div className="w-full h-1 bg-accent/40 rounded-full overflow-hidden">
+                            <div className="w-full h-1.5 bg-accent rounded-full overflow-hidden">
                               <div
                                 className="h-full bg-primary rounded-full"
                                 style={{
@@ -574,24 +581,24 @@ export function KanbanBoardPage() {
 
                         {/* Dependencies Alert Badge */}
                         {((task.dependencies || []).length > 0 || (task._count?.dependencies || 0) > 0) && (
-                          <div className="flex items-center gap-1 text-[10px] text-purple-400 font-medium bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
-                            <GitBranch className="w-3 h-3" />
+                          <div className="flex items-center gap-1.5 text-xs text-purple-400 font-medium bg-purple-500/10 px-2 py-1 rounded-md border border-purple-500/20">
+                            <GitBranch className="w-3.5 h-3.5" />
                             <span>Prerequisites linked</span>
                           </div>
                         )}
 
                         {/* Card Footer: Due Date, Comments, Quick Move buttons */}
-                        <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[10px] text-muted-foreground">
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-3">
                             {task.dueDate && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                                 {new Date(task.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                               </span>
                             )}
                             {((task.comments || []).length > 0 || (task._count?.comments || 0) > 0) && (
-                              <span className="flex items-center gap-0.5">
-                                <MessageSquare className="w-3 h-3" />
+                              <span className="flex items-center gap-1">
+                                <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                                 {task.comments?.length || task._count?.comments}
                               </span>
                             )}
@@ -607,7 +614,7 @@ export function KanbanBoardPage() {
                               className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
                               title="Move left"
                             >
-                              <ArrowLeft className="w-3 h-3" />
+                              <ArrowLeft className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={(e) => {
@@ -617,7 +624,7 @@ export function KanbanBoardPage() {
                               className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
                               title="Move right"
                             >
-                              <ArrowRight className="w-3 h-3" />
+                              <ArrowRight className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
@@ -626,11 +633,11 @@ export function KanbanBoardPage() {
                   })}
 
                   {colTasks.length === 0 && (
-                    <div className="h-32 flex flex-col items-center justify-center border-2 border-dashed border-border/60 rounded-xl text-center p-3">
+                    <div className="h-40 flex flex-col items-center justify-center border-2 border-dashed border-border/60 rounded-xl text-center p-4">
                       <span className="text-xs text-muted-foreground">No tasks</span>
                       <button
                         onClick={() => handleOpenNewTaskInCol(col.id)}
-                        className="text-[11px] text-primary hover:underline font-medium mt-1 cursor-pointer"
+                        className="text-xs text-primary hover:underline font-medium mt-1 cursor-pointer"
                       >
                         + Add task
                       </button>

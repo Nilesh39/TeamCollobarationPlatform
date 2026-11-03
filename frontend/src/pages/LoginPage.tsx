@@ -10,7 +10,13 @@ import { apiClient } from '../lib/apiClient';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const { setAuth, isAuthenticated, user } = useAuthStore();
+
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate('/app');
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const [email, setEmail] = React.useState('owner@acme.com');
   const [password, setPassword] = React.useState('Password123!');

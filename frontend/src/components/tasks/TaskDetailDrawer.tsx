@@ -496,7 +496,7 @@ export function TaskDetailDrawer({
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Drawer Panel */}
-      <div className="relative w-full max-w-2xl bg-card border-l border-border shadow-2xl h-full flex flex-col z-10 animate-in slide-in-from-right duration-300">
+      <div className="relative w-full max-w-3xl xl:max-w-4xl bg-card border-l border-border shadow-2xl h-full flex flex-col z-10 animate-in slide-in-from-right duration-300">
         {/* Drawer Header */}
         <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between gap-3 bg-muted/20">
           <div className="flex items-center gap-2">

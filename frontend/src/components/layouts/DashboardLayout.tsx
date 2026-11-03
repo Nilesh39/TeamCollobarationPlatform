@@ -30,7 +30,7 @@ export function DashboardLayout() {
           onOpenSearch={() => setIsSearchOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 overflow-y-auto w-full max-w-[1920px] mx-auto">
           <Outlet context={{ onOpenNewTask: () => setIsNewTaskOpen(true) }} />
         </main>
       </div>
