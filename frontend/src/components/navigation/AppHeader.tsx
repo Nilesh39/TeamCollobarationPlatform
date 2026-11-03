@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../app/store/useAuthStore';
 import { useThemeStore } from '../../app/store/useThemeStore';
+import { useNotificationStore } from '../../app/store/useNotificationStore';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { toast } from '../ui/toast';
@@ -32,9 +33,11 @@ export function AppHeader({ onOpenMobileMenu, onOpenSearch }: HeaderProps) {
   const navigate = useNavigate();
   const { user, activeTenant, availableTenants, setActiveTenant, clearAuth } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, triggerDemoNotification } = useNotificationStore();
 
   const [tenantDropdown, setTenantDropdown] = React.useState(false);
   const [userDropdown, setUserDropdown] = React.useState(false);
+  const [notifDropdown, setNotifDropdown] = React.useState(false);
 
   // Derive breadcrumb path
   const pathParts = location.pathname.split('/').filter(Boolean);
@@ -135,13 +138,96 @@ export function AppHeader({ onOpenMobileMenu, onOpenSearch }: HeaderProps) {
           {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-blue-500" />}
         </Button>
 
-        {/* Notifications Icon Button */}
-        <Link to="/app/notifications">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground relative">
+        {/* Notifications Icon Button & Live Real-Time Dropdown */}
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              setNotifDropdown(!notifDropdown);
+              setTenantDropdown(false);
+              setUserDropdown(false);
+            }}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground relative cursor-pointer"
+            title="Notifications"
+          >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 min-w-[16px] px-1 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </Button>
-        </Link>
+
+          {notifDropdown && (
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border border-border bg-popover p-2 shadow-2xl z-50 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/60">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-foreground">Real-Time Alerts</span>
+                  {unreadCount > 0 && (
+                    <Badge variant="destructive" className="text-[10px] py-0 px-1.5">
+                      {unreadCount} new
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => triggerDemoNotification()}
+                    className="text-[10px] text-primary hover:underline cursor-pointer"
+                    title="Simulate incoming real-time alert"
+                  >
+                    Test Alert
+                  </button>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={() => markAllAsRead()}
+                      className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="max-h-72 overflow-y-auto py-1 divide-y divide-border/40">
+                {notifications.slice(0, 5).map((n) => (
+                  <div
+                    key={n.id}
+                    onClick={() => {
+                      markAsRead(n.id);
+                      setNotifDropdown(false);
+                      navigate('/app/notifications');
+                    }}
+                    className={`p-2.5 rounded-lg text-xs cursor-pointer hover:bg-accent/60 transition-colors ${
+                      !n.isRead ? 'bg-accent/20' : ''
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-semibold text-foreground text-xs line-clamp-1">{n.title}</div>
+                      <span className="text-[10px] text-muted-foreground shrink-0">{n.timestamp}</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{n.description}</p>
+                  </div>
+                ))}
+                {notifications.length === 0 && (
+                  <div className="py-6 text-center text-xs text-muted-foreground">
+                    No active notifications
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-1.5 border-t border-border/60 text-center">
+                <Link
+                  to="/app/notifications"
+                  onClick={() => setNotifDropdown(false)}
+                  className="text-xs text-primary font-medium hover:underline inline-block py-1"
+                >
+                  View all notifications &rarr;
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Tenant Switcher Dropdown */}
         <div className="relative">

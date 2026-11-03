@@ -37,6 +37,13 @@ import {
   MilestoneItem
 } from '../types/project.types';
 
+const DEFAULT_MEMBERS = [
+  { userId: '00000000-0000-0000-0000-000000000003', fullName: 'Alice Walker (Owner)', email: 'owner@acme.com' },
+  { userId: '00000000-0000-0000-0000-000000000004', fullName: 'Bob Smith (Admin)', email: 'bob@acme.com' },
+  { userId: '00000000-0000-0000-0000-000000000005', fullName: 'Charlie Davis (Project Manager)', email: 'charlie@acme.com' },
+  { userId: '00000000-0000-0000-0000-000000000006', fullName: 'Dave Wilson (Team Member)', email: 'dave@acme.com' }
+];
+
 export function ProjectDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -45,7 +52,7 @@ export function ProjectDetailsPage() {
   const [project, setProject] = React.useState<ProjectDetailItem | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState('tasks');
-  const [teamMembers, setTeamMembers] = React.useState<Array<{ userId: string; fullName: string; email: string }>>([]);
+  const [teamMembers, setTeamMembers] = React.useState<Array<{ userId: string; fullName: string; email: string }>>(DEFAULT_MEMBERS);
 
   // Milestone Modal State
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = React.useState(false);

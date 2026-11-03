@@ -28,13 +28,26 @@ import { apiClient } from '../lib/apiClient';
 import { useAuthStore } from '../app/store/useAuthStore';
 import { ProjectListItem, ProjectStatus, ProjectPriority } from '../types/project.types';
 
+const DEFAULT_WORKSPACES = [
+  { id: '00000000-0000-0000-0000-000000000010', name: 'General Workspace' },
+  { id: '00000000-0000-0000-0000-000000000011', name: 'Engineering Core' },
+  { id: '00000000-0000-0000-0000-000000000012', name: 'Product & Design' }
+];
+
+const DEFAULT_MEMBERS = [
+  { userId: '00000000-0000-0000-0000-000000000003', fullName: 'Alice Walker (Owner)', email: 'owner@acme.com' },
+  { userId: '00000000-0000-0000-0000-000000000004', fullName: 'Bob Smith (Admin)', email: 'bob@acme.com' },
+  { userId: '00000000-0000-0000-0000-000000000005', fullName: 'Charlie Davis (Project Manager)', email: 'charlie@acme.com' },
+  { userId: '00000000-0000-0000-0000-000000000006', fullName: 'Dave Wilson (Team Member)', email: 'dave@acme.com' }
+];
+
 export function ProjectsPage() {
   const navigate = useNavigate();
   const { activeTenant, user } = useAuthStore();
 
   const [projects, setProjects] = React.useState<ProjectListItem[]>([]);
-  const [workspaces, setWorkspaces] = React.useState<Array<{ id: string; name: string }>>([]);
-  const [teamMembers, setTeamMembers] = React.useState<Array<{ userId: string; fullName: string; email: string }>>([]);
+  const [workspaces, setWorkspaces] = React.useState<Array<{ id: string; name: string }>>(DEFAULT_WORKSPACES);
+  const [teamMembers, setTeamMembers] = React.useState<Array<{ userId: string; fullName: string; email: string }>>(DEFAULT_MEMBERS);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<string>('ALL');
@@ -50,8 +63,8 @@ export function ProjectsPage() {
   const [name, setName] = React.useState('');
   const [key, setKey] = React.useState('');
   const [description, setDescription] = React.useState('');
-  const [workspaceId, setWorkspaceId] = React.useState('');
-  const [managerId, setManagerId] = React.useState('');
+  const [workspaceId, setWorkspaceId] = React.useState(DEFAULT_WORKSPACES[0].id);
+  const [managerId, setManagerId] = React.useState(DEFAULT_MEMBERS[0].userId);
   const [status, setStatus] = React.useState<ProjectStatus>('PLANNING');
   const [priority, setPriority] = React.useState<ProjectPriority>('MEDIUM');
   const [dueDate, setDueDate] = React.useState('');
@@ -66,14 +79,19 @@ export function ProjectsPage() {
       if (wsRes?.data?.data && wsRes.data.data.length > 0) {
         setWorkspaces(wsRes.data.data);
         if (!workspaceId) setWorkspaceId(wsRes.data.data[0].id);
+      } else {
+        setWorkspaces(DEFAULT_WORKSPACES);
       }
 
       if (membersRes?.data?.data && membersRes.data.data.length > 0) {
         setTeamMembers(membersRes.data.data);
         if (!managerId) setManagerId(user?.id || membersRes.data.data[0].userId);
+      } else {
+        setTeamMembers(DEFAULT_MEMBERS);
       }
     } catch {
-      // ignore
+      setWorkspaces(DEFAULT_WORKSPACES);
+      setTeamMembers(DEFAULT_MEMBERS);
     }
   };
 
@@ -123,12 +141,7 @@ export function ProjectsPage() {
     setModalError(null);
 
     try {
-      const targetWorkspaceId = workspaceId || workspaces[0]?.id;
-      if (!targetWorkspaceId) {
-        setModalError('No active workspace available in this organization.');
-        setSubmitting(false);
-        return;
-      }
+      const targetWorkspaceId = workspaceId || workspaces[0]?.id || DEFAULT_WORKSPACES[0].id;
 
       const res = await apiClient.post('/projects', {
         workspaceId: targetWorkspaceId,
@@ -141,7 +154,10 @@ export function ProjectsPage() {
         dueDate: dueDate || undefined
       });
 
-      toast('Project Created', `Project [${res.data?.data?.key || key}] created successfully.`);
+      toast('Project Created', `Project [${res.data?.data?.key || key}] created successfully.`, 'success');
+      if (res.data?.data) {
+        setProjects((prev) => [res.data.data, ...prev.filter((p) => p.id !== res.data.data.id)]);
+      }
       setIsModalOpen(false);
       setName('');
       setKey('');
@@ -459,10 +475,10 @@ export function ProjectsPage() {
               <select
                 value={workspaceId}
                 onChange={(e) => setWorkspaceId(e.target.value)}
-                className="w-full h-9 rounded-md border border-input bg-background/60 px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+                className="w-full h-9 rounded-md border border-input bg-card px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring cursor-pointer"
               >
                 {workspaces.map((w) => (
-                  <option key={w.id} value={w.id}>
+                  <option key={w.id} value={w.id} className="bg-card text-foreground py-1">
                     {w.name}
                   </option>
                 ))}
@@ -474,10 +490,13 @@ export function ProjectsPage() {
               <select
                 value={managerId}
                 onChange={(e) => setManagerId(e.target.value)}
-                className="w-full h-9 rounded-md border border-input bg-background/60 px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+                className="w-full h-9 rounded-md border border-input bg-card px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring cursor-pointer"
               >
+                <option value="" className="bg-card text-foreground py-1">
+                  Unassigned (None)
+                </option>
                 {teamMembers.map((m) => (
-                  <option key={m.userId} value={m.userId}>
+                  <option key={m.userId} value={m.userId} className="bg-card text-foreground py-1">
                     {m.fullName} ({m.email})
                   </option>
                 ))}

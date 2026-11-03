@@ -5,8 +5,10 @@ import { AppHeader } from '../navigation/AppHeader';
 import { CommandPalette } from '../navigation/CommandPalette';
 import { CreateTaskModal } from '../modals/CreateTaskModal';
 import { ToastContainer } from '../ui/toast';
+import { useRealtime } from '../../lib/useRealtime';
 
 export function DashboardLayout() {
+  useRealtime();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);

@@ -6,7 +6,10 @@ export enum RealTimeEvents {
   TASK_MOVED = 'task:moved',
   TASK_DELETED = 'task:deleted',
   TASK_COMMENT_ADDED = 'task:comment_added',
-  TASK_DEPENDENCY_UPDATED = 'task:dependency_updated'
+  TASK_DEPENDENCY_UPDATED = 'task:dependency_updated',
+  PROJECT_CREATED = 'project:created',
+  PROJECT_UPDATED = 'project:updated',
+  NOTIFICATION = 'notification'
 }
 
 export interface RealTimePayload<T = any> {

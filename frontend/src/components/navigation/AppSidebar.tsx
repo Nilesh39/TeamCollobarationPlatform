@@ -24,6 +24,7 @@ import {
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { useNotificationStore } from '../../app/store/useNotificationStore';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -71,6 +72,7 @@ export function AppSidebar({
   onOpenQuickTask
 }: SidebarProps) {
   const location = useLocation();
+  const { unreadCount } = useNotificationStore();
 
   const sidebarContent = (
     <div className="flex flex-col h-full justify-between bg-card border-r border-border/80 select-none">
@@ -209,6 +211,15 @@ export function AppSidebar({
             {SYSTEM_NAV.map((item) => {
               const isActive = location.pathname === item.href;
               const Icon = item.icon;
+              const displayBadge =
+                item.name === 'Notifications'
+                  ? unreadCount > 0
+                    ? String(unreadCount)
+                    : undefined
+                  : item.badge;
+              const displayVariant =
+                item.name === 'Notifications' && unreadCount > 0 ? 'destructive' : item.badgeVariant;
+
               return (
                 <NavLink
                   key={item.href}
@@ -226,9 +237,9 @@ export function AppSidebar({
                   {!isCollapsed && (
                     <span className="flex-1 truncate">{item.name}</span>
                   )}
-                  {!isCollapsed && item.badge && (
-                    <Badge variant={item.badgeVariant || 'outline'} className="text-[10px] px-1.5 py-0">
-                      {item.badge}
+                  {!isCollapsed && displayBadge && (
+                    <Badge variant={displayVariant || 'outline'} className="text-[10px] px-1.5 py-0">
+                      {displayBadge}
                     </Badge>
                   )}
                 </NavLink>

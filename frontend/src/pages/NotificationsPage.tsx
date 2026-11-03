@@ -6,19 +6,28 @@ import {
   Bot,
   CheckCircle2,
   ShieldAlert,
-  Clock
+  Clock,
+  Sparkles,
+  Trash2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { toast } from '../components/ui/toast';
-import { INITIAL_NOTIFICATIONS, FixtureNotification } from '../lib/fixtures';
+import { useNotificationStore } from '../app/store/useNotificationStore';
+import { FixtureNotification } from '../lib/fixtures';
 
 export function NotificationsPage() {
-  const [notifications, setNotifications] = React.useState<FixtureNotification[]>(INITIAL_NOTIFICATIONS);
-  const [filter, setFilter] = React.useState<'ALL' | 'UNREAD' | 'MENTIONS' | 'AGENT'>('ALL');
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearNotifications,
+    triggerDemoNotification
+  } = useNotificationStore();
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const [filter, setFilter] = React.useState<'ALL' | 'UNREAD' | 'MENTIONS' | 'AGENT'>('ALL');
 
   const filteredNotifications = notifications.filter((n) => {
     if (filter === 'UNREAD') return !n.isRead;
@@ -28,14 +37,12 @@ export function NotificationsPage() {
   });
 
   const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    toast('Notifications Cleared', 'All alerts marked as read.');
+    markAllAsRead();
+    toast('Notifications Cleared', 'All alerts marked as read.', 'success');
   };
 
   const handleMarkOne = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: !n.isRead } : n))
-    );
+    markAsRead(id);
   };
 
   const getIcon = (type: FixtureNotification['type']) => {
@@ -61,13 +68,42 @@ export function NotificationsPage() {
             {unreadCount > 0 && <Badge variant="destructive">{unreadCount} Unread</Badge>}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Real-time mentions, AI reasoning alerts, and sprint task assignments.
+            Real-time SSE event stream connected with audio chime and instant sync.
           </p>
         </div>
 
-        <Button variant="outline" size="sm" onClick={handleMarkAllRead} disabled={unreadCount === 0}>
-          <CheckCheck className="w-3.5 h-3.5 mr-1.5" /> Mark All as Read
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={triggerDemoNotification}
+            className="text-xs cursor-pointer shadow-xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> Test Real-time Alert
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleMarkAllRead}
+            disabled={unreadCount === 0}
+            className="text-xs cursor-pointer"
+          >
+            <CheckCheck className="w-3.5 h-3.5 mr-1.5" /> Mark All as Read
+          </Button>
+
+          {notifications.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearNotifications}
+              className="text-xs text-muted-foreground hover:text-destructive cursor-pointer"
+              title="Clear all notification history"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filter Tabs */}

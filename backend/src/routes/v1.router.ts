@@ -7,6 +7,7 @@ import { projectRoutes } from '../modules/projects/project.routes';
 import { taskRoutes } from '../modules/tasks/task.routes';
 import { documentRoutes } from '../modules/documents/document.routes';
 import { agentRoutes } from '../modules/agents/agent.routes';
+import { realtimeRoutes } from '../modules/realtime/realtime.routes';
 
 const v1Router = Router();
 
@@ -33,5 +34,8 @@ v1Router.use('/documents', documentRoutes);
 
 // AI Agents & Autonomous Tooling
 v1Router.use('/agents', agentRoutes);
+
+// Real-Time Notification Stream & Broadcast
+v1Router.use('/realtime', realtimeRoutes);
 
 export { v1Router };
