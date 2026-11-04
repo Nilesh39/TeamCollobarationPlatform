@@ -16,7 +16,8 @@ import {
   Building2,
   User,
   Shield,
-  Layers
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -253,9 +254,19 @@ export function ProjectsPage() {
           </p>
         </div>
 
-        <Button onClick={() => setIsModalOpen(true)} size="sm">
-          <Plus className="w-3.5 h-3.5 mr-1" /> New Project
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/app/ai-planner')}
+            className="text-xs border-purple-500/40 hover:border-purple-500 text-purple-400 hover:text-purple-300 bg-purple-500/10 cursor-pointer shadow-xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> AI Project Planner
+          </Button>
+          <Button onClick={() => setIsModalOpen(true)} size="sm">
+            <Plus className="w-3.5 h-3.5 mr-1" /> New Project
+          </Button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}

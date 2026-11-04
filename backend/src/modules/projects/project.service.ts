@@ -10,6 +10,7 @@ import {
   AddProjectMemberInput
 } from './project.validation';
 import { ProjectStatus, ProjectPriority, MilestoneStatus, TenantRole } from '@prisma/client';
+import { APPROVED_SESSION_PROJECTS } from '../ai-planner/ai-planner.service';
 
 const SESSION_PROJECTS: Array<any> = [
   {
@@ -151,7 +152,7 @@ export class ProjectService {
       // Database offline/unreachable fallback
     }
 
-    let result = [...SESSION_PROJECTS];
+    let result = [...APPROVED_SESSION_PROJECTS, ...SESSION_PROJECTS];
     if (filters?.status && (filters.status as any) !== 'ALL') {
       result = result.filter((p) => p.status === filters.status);
     }
@@ -250,7 +251,8 @@ export class ProjectService {
       // Database offline/unreachable fallback
     }
 
-    const sessionProj = SESSION_PROJECTS.find((p) => p.id === projectId) || SESSION_PROJECTS[0];
+    const allSession = [...APPROVED_SESSION_PROJECTS, ...SESSION_PROJECTS];
+    const sessionProj = allSession.find((p) => p.id === projectId) || allSession[0];
     if (sessionProj) {
       return {
         ...sessionProj,

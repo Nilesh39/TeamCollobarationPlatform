@@ -8,6 +8,7 @@ import { taskRoutes } from '../modules/tasks/task.routes';
 import { documentRoutes } from '../modules/documents/document.routes';
 import { agentRoutes } from '../modules/agents/agent.routes';
 import { realtimeRoutes } from '../modules/realtime/realtime.routes';
+import { aiPlannerRoutes } from '../modules/ai-planner/ai-planner.routes';
 
 const v1Router = Router();
 
@@ -37,5 +38,8 @@ v1Router.use('/agents', agentRoutes);
 
 // Real-Time Notification Stream & Broadcast
 v1Router.use('/realtime', realtimeRoutes);
+
+// AI Project Planner (Google Gemini API & Structured Decomposition)
+v1Router.use('/ai-planner', aiPlannerRoutes);
 
 export { v1Router };

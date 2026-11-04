@@ -12,6 +12,7 @@ import { KanbanBoardPage } from '../pages/KanbanBoardPage';
 import { CalendarPage } from '../pages/CalendarPage';
 import { TeamMembersPage } from '../pages/TeamMembersPage';
 import { AiAssistantPage } from '../pages/AiAssistantPage';
+import { AiProjectPlannerPage } from '../pages/AiProjectPlannerPage';
 import { DocumentsPage } from '../pages/DocumentsPage';
 import { MeetingsPage } from '../pages/MeetingsPage';
 import { AnalyticsPage } from '../pages/AnalyticsPage';
@@ -90,6 +91,10 @@ export const router = createBrowserRouter([
       {
         path: 'ai-assistant',
         element: <AiAssistantPage />
+      },
+      {
+        path: 'ai-planner',
+        element: <AiProjectPlannerPage />
       },
       {
         path: 'documents',

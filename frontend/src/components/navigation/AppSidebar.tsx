@@ -19,7 +19,8 @@ import {
   ChevronRight,
   Sparkles,
   Command,
-  Plus
+  Plus,
+  Wand2
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Badge } from '../ui/badge';
@@ -52,6 +53,7 @@ const PRIMARY_NAV: NavItem[] = [
 ];
 
 const INTELLIGENCE_NAV: NavItem[] = [
+  { name: 'AI Project Planner', href: '/app/ai-planner', icon: Wand2, badge: 'Gemini', badgeVariant: 'purple' },
   { name: 'AI Assistant', href: '/app/ai-assistant', icon: Bot, badge: 'Pro', badgeVariant: 'purple' },
   { name: 'Documents RAG', href: '/app/documents', icon: FileText, badge: '768d', badgeVariant: 'cyan' },
   { name: 'Meetings & Sync', href: '/app/meetings', icon: Video, badge: 'LIVE', badgeVariant: 'success' },
