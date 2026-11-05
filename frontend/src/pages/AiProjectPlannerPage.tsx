@@ -76,7 +76,7 @@ export function AiProjectPlannerPage() {
     { id: '00000000-0000-0000-0000-000000000011', name: 'Engineering Core' },
     { id: '00000000-0000-0000-0000-000000000012', name: 'Product & Design' }
   ]);
-  const [selectedModel, setSelectedModel] = React.useState('gemini-1.5-flash');
+  const [selectedModel, setSelectedModel] = React.useState('gemini-2.5-flash');
   const [apiKey, setApiKey] = React.useState('');
   const [showKeyField, setShowKeyField] = React.useState(false);
 
@@ -399,9 +399,9 @@ export function AiProjectPlannerPage() {
                   onChange={(e) => setSelectedModel(e.target.value)}
                   className="w-full h-9 rounded-lg border border-input bg-card px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring cursor-pointer"
                 >
-                  <option value="gemini-1.5-flash" className="bg-card text-foreground">Gemini 1.5 Flash (Fast)</option>
-                  <option value="gemini-1.5-pro" className="bg-card text-foreground">Gemini 1.5 Pro (Deep Reasoning)</option>
-                  <option value="gemini-2.0-flash" className="bg-card text-foreground">Gemini 2.0 Flash</option>
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Ultrafast)</option>
+                  <option value="gemini-2.5-pro">Gemini 2.5 Pro (Deep Architecture)</option>
+                  <option value="gemini-flash-latest">Gemini Flash Latest</option>
                 </select>
               </div>
 

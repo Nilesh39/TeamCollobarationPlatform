@@ -75,6 +75,17 @@ body {
   background: hsl(var(--muted-foreground) / 0.4);
 }
 
+/* Custom Select Dropdowns & Options Contrast */
+select {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #0f172a;
+  color: #f8fafc;
+  padding: 6px 10px;
+}
+
 /* Subtle glass effect */
 .glass-panel {
   background: hsl(var(--card) / 0.75);

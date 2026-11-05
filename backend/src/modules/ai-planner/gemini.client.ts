@@ -31,15 +31,16 @@ export class GeminiPlannerClient {
   async generatePlan(
     prompt: string,
     targetDays = 30,
-    modelName = 'gemini-1.5-flash',
+    modelName = 'gemini-2.5-flash',
     overrideApiKey?: string
   ): Promise<GeminiPlanResult> {
     const apiKey = overrideApiKey?.trim() || this.defaultApiKey?.trim();
     const startTime = Date.now();
+    const resolvedModel = modelName.includes('1.5') ? modelName.replace('1.5', '2.5') : (modelName || 'gemini-2.5-flash');
 
     if (apiKey) {
       try {
-        return await this.callGeminiWithRetry(prompt, targetDays, modelName, apiKey, startTime);
+        return await this.callGeminiWithRetry(prompt, targetDays, resolvedModel, apiKey, startTime);
       } catch (err: any) {
         console.warn(`[Gemini API] Remote call failed (${err.message}). Falling back to dynamic semantic synthesizer.`);
       }

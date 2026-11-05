@@ -3,7 +3,7 @@ import { useAuthStore } from '../app/store/useAuthStore';
 import { useNotificationStore } from '../app/store/useNotificationStore';
 import { toast } from '../components/ui/toast';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 export function useRealtime() {
   const { activeTenant, accessToken } = useAuthStore();

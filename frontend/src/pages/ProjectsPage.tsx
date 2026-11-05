@@ -77,23 +77,43 @@ export function ProjectsPage() {
         apiClient.get('/tenants/current/members').catch(() => null)
       ]);
 
-      if (wsRes?.data?.data && wsRes.data.data.length > 0) {
-        setWorkspaces(wsRes.data.data);
-        if (!workspaceId) setWorkspaceId(wsRes.data.data[0].id);
-      } else {
-        setWorkspaces(DEFAULT_WORKSPACES);
-      }
+      const availableWorkspaces =
+        wsRes?.data?.data && wsRes.data.data.length > 0
+          ? wsRes.data.data
+          : DEFAULT_WORKSPACES;
+      setWorkspaces(availableWorkspaces);
+      setWorkspaceId((prev) => (availableWorkspaces.some((w: any) => w.id === prev) ? prev : availableWorkspaces[0]?.id || ''));
 
-      if (membersRes?.data?.data && membersRes.data.data.length > 0) {
-        setTeamMembers(membersRes.data.data);
-        if (!managerId) setManagerId(user?.id || membersRes.data.data[0].userId);
-      } else {
-        setTeamMembers(DEFAULT_MEMBERS);
-      }
+      const availableMembers =
+        membersRes?.data?.data && membersRes.data.data.length > 0
+          ? membersRes.data.data
+          : DEFAULT_MEMBERS;
+      setTeamMembers(availableMembers);
+      setManagerId((prev) => {
+        if (prev && availableMembers.some((m: any) => m.userId === prev)) return prev;
+        return user?.id || availableMembers[0]?.userId || '';
+      });
     } catch {
       setWorkspaces(DEFAULT_WORKSPACES);
       setTeamMembers(DEFAULT_MEMBERS);
     }
+  };
+
+  const handleOpenCreateModal = () => {
+    setName('');
+    setKey('');
+    setDescription('');
+    setDueDate('');
+    setModalError(null);
+    setStatus('PLANNING');
+    setPriority('MEDIUM');
+    if (workspaces.length > 0) {
+      setWorkspaceId(workspaces[0].id);
+    }
+    if (teamMembers.length > 0) {
+      setManagerId(user?.id || teamMembers[0].userId);
+    }
+    setIsModalOpen(true);
   };
 
   const fetchProjects = async () => {
@@ -263,7 +283,7 @@ export function ProjectsPage() {
           >
             <Sparkles className="w-3.5 h-3.5 mr-1.5" /> AI Project Planner
           </Button>
-          <Button onClick={() => setIsModalOpen(true)} size="sm">
+          <Button onClick={handleOpenCreateModal} size="sm">
             <Plus className="w-3.5 h-3.5 mr-1" /> New Project
           </Button>
         </div>
@@ -341,7 +361,7 @@ export function ProjectsPage() {
                 : 'Get started by creating your team’s first project.'}
             </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} size="sm">
+          <Button onClick={handleOpenCreateModal} size="sm">
             <Plus className="w-3.5 h-3.5 mr-1" /> Create Project
           </Button>
         </Card>
@@ -486,10 +506,10 @@ export function ProjectsPage() {
               <select
                 value={workspaceId}
                 onChange={(e) => setWorkspaceId(e.target.value)}
-                className="w-full h-9 rounded-md border border-input bg-card px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+                className="w-full h-9 rounded-md border border-input bg-background/80 px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring cursor-pointer"
               >
                 {workspaces.map((w) => (
-                  <option key={w.id} value={w.id} className="bg-card text-foreground py-1">
+                  <option key={w.id} value={w.id}>
                     {w.name}
                   </option>
                 ))}
@@ -501,13 +521,11 @@ export function ProjectsPage() {
               <select
                 value={managerId}
                 onChange={(e) => setManagerId(e.target.value)}
-                className="w-full h-9 rounded-md border border-input bg-card px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+                className="w-full h-9 rounded-md border border-input bg-background/80 px-3 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring cursor-pointer"
               >
-                <option value="" className="bg-card text-foreground py-1">
-                  Unassigned (None)
-                </option>
+                <option value="">Unassigned (None)</option>
                 {teamMembers.map((m) => (
-                  <option key={m.userId} value={m.userId} className="bg-card text-foreground py-1">
+                  <option key={m.userId} value={m.userId}>
                     {m.fullName} ({m.email})
                   </option>
                 ))}
